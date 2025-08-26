@@ -241,6 +241,22 @@
                 <p class="text-lg text-slate-700 leading-relaxed">
                     ¡Prepárate para descubrir cómo los <span class="font-bold text-green-800">sistemas de ecuaciones lineales</span> pueden ayudarte a resolver retos de la vida real y la tecnología de una forma divertida y visual! 🚀
                 </p>
+                <!-- Componente de síntesis de voz para introducción -->
+                <div class="speech-controls mb-4 p-3 bg-green-100 rounded-lg flex items-center flex-wrap gap-2 mt-4" data-target="introduccion">
+                    <button class="play-btn bg-green-600 hover:bg-green-700 text-white font-medium py-1 px-4 rounded-full flex items-center">
+                        <span class="mr-1">▶️</span> Leer
+                    </button>
+                    <button class="pause-btn bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-1 px-4 rounded-full flex items-center" disabled>
+                        <span class="mr-1">⏸️</span> Pausar
+                    </button>
+                    <button class="stop-btn bg-red-500 hover:bg-red-600 text-white font-medium py-1 px-4 rounded-full flex items-center" disabled>
+                        <span class="mr-1">⏹️</span> Detener
+                    </button>
+                    <div class="flex items-center ml-2">
+                        <label for="speech-rate-introduccion" class="text-sm text-green-800 mr-2">Velocidad:</label>
+                        <input type="range" class="speech-rate" id="speech-rate-introduccion" min="0.5" max="2" step="0.1" value="1" class="w-24">
+                    </div>
+                </div>
             </div>
 
             <!-- Objetivos -->
@@ -268,6 +284,22 @@
                         <span>Desarrollar habilidades para analizar y comparar diferentes métodos de resolución, eligiendo el más adecuado según el contexto.</span>
                     </li>
                 </ul>
+                <!-- Componente de síntesis de voz para objetivos -->
+                <div class="speech-controls mb-4 p-3 bg-green-100 rounded-lg flex items-center flex-wrap gap-2 mt-4" data-target="objetivos">
+                    <button class="play-btn bg-green-600 hover:bg-green-700 text-white font-medium py-1 px-4 rounded-full flex items-center">
+                        <span class="mr-1">▶️</span> Leer
+                    </button>
+                    <button class="pause-btn bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-1 px-4 rounded-full flex items-center" disabled>
+                        <span class="mr-1">⏸️</span> Pausar
+                    </button>
+                    <button class="stop-btn bg-red-500 hover:bg-red-600 text-white font-medium py-1 px-4 rounded-full flex items-center" disabled>
+                        <span class="mr-1">⏹️</span> Detener
+                    </button>
+                    <div class="flex items-center ml-2">
+                        <label for="speech-rate-introduccion" class="text-sm text-green-800 mr-2">Velocidad:</label>
+                        <input type="range" class="speech-rate" id="speech-rate-introduccion" min="0.5" max="2" step="0.1" value="1" class="w-24">
+                    </div>
+                </div>
             </div>
 
             <!-- Fundamentos Teóricos -->
@@ -857,6 +889,257 @@ document.addEventListener('DOMContentLoaded', () => {
                 modal.classList.remove('active');
                 document.body.style.overflow = ''; // Restaurar scroll
             }
+        });
+    });
+</script>
+
+<script>
+    // Script para SpeechSynthesis - Versión reutilizable
+    document.addEventListener('DOMContentLoaded', function() {
+        // Variables para SpeechSynthesis
+        const synth = window.speechSynthesis;
+        let voices = [];
+        let activeReaders = {}; // Almacena los lectores activos por sección
+        let paulinaVoice = null; // Variable para almacenar la voz de Paulina
+        
+        // Función para cargar las voces disponibles
+        function loadVoices() {
+            voices = synth.getVoices();
+            console.log('Voces disponibles:', voices.length);
+            
+            // Mostrar todas las voces disponibles en la consola
+            voices.forEach(voice => {
+                console.log(`Voz: ${voice.name}, Idioma: ${voice.lang}, Default: ${voice.default}`);
+            });
+            
+            // Buscar la voz de Paulina (es-MX)
+            paulinaVoice = voices.find(voice => voice.name.includes('Paulina'));
+            
+            // Si no se encuentra Paulina, buscar cualquier voz en español
+            if (!paulinaVoice) {
+                paulinaVoice = voices.find(voice => voice.lang.startsWith('es'));
+                if (paulinaVoice) {
+                    console.log('Usando voz en español alternativa:', paulinaVoice.name);
+                } else {
+                    console.warn('No se encontró ninguna voz en español, usando voz predeterminada');
+                    if (voices.length > 0) {
+                        paulinaVoice = voices[0];
+                        console.log('Usando voz predeterminada:', paulinaVoice.name);
+                    }
+                }
+            } else {
+                console.log('Voz Paulina encontrada:', paulinaVoice.name);
+            }
+        }
+        
+        // Cargar voces cuando estén disponibles
+        if (synth.onvoiceschanged !== undefined) {
+            synth.onvoiceschanged = loadVoices;
+        }
+        
+        // Intentar cargar voces inmediatamente (para navegadores que ya las tienen cargadas)
+        loadVoices();
+        
+        // Función para filtrar emojis del texto
+        function removeEmojis(text) {
+            // Rango de emojis Unicode
+            return text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+        }
+        
+        // Función para obtener el texto de una sección sin segmentar
+        function getSectionText(sectionId) {
+            // Si el sectionId comienza con '#', eliminarlo
+            if (sectionId.startsWith('#')) {
+                sectionId = sectionId.substring(1);
+            }
+            
+            const section = document.getElementById(sectionId);
+            if (!section) {
+                console.error('No se encontró la sección:', sectionId);
+                return { segments: [], hasSegments: false };
+            }
+            
+            console.log('Obteniendo texto de la sección:', sectionId);
+            
+            // Primero, clonar la sección para no modificar el DOM original
+            const sectionClone = section.cloneNode(true);
+            
+            // Eliminar los controles de voz del clon para evitar leer los botones
+            const speechControls = sectionClone.querySelectorAll('.speech-controls');
+            speechControls.forEach(control => {
+                control.parentNode.removeChild(control);
+            });
+            
+            // Obtener todo el texto como un solo segmento
+            const text = removeEmojis(sectionClone.textContent.trim());
+            console.log('Usando texto completo sin segmentar');
+            
+            return { 
+                segments: [{ text: text, type: 'text', element: null }],
+                hasSegments: false 
+            };
+        }
+        
+        // Función para actualizar el estado de los botones
+        function updateButtonStates(controlsElement, isPlaying) {
+            const playBtn = controlsElement.querySelector('.play-btn');
+            const pauseBtn = controlsElement.querySelector('.pause-btn');
+            const stopBtn = controlsElement.querySelector('.stop-btn');
+            
+            if (playBtn) playBtn.disabled = isPlaying;
+            if (pauseBtn) pauseBtn.disabled = !isPlaying;
+            if (stopBtn) stopBtn.disabled = !isPlaying;
+        }
+        
+        
+        // Configurar cada conjunto de controles de voz
+        document.querySelectorAll('.speech-controls').forEach(controls => {
+            const sectionId = controls.getAttribute('data-target');
+            const playBtn = controls.querySelector('.play-btn');
+            const pauseBtn = controls.querySelector('.pause-btn');
+            const stopBtn = controls.querySelector('.stop-btn');
+            const rateControl = controls.querySelector('.speech-rate');
+            
+            if (!sectionId || !playBtn || !pauseBtn || !stopBtn || !rateControl) {
+                console.error('Faltan elementos necesarios para el control de voz');
+                return;
+            }
+            
+            console.log('Configurando controles para sección:', sectionId);
+            
+            // Función para procesar el siguiente segmento
+            function processNextSegment(reader, controls, sectionId) {
+                if (reader.currentSegmentIndex >= reader.segments.length) {
+                    console.log('Lectura completada para sección:', sectionId);
+                    updateButtonStates(controls, false);
+                    delete activeReaders[sectionId];
+                    return;
+                }
+                
+                const segment = reader.segments[reader.currentSegmentIndex];
+                console.log('Procesando segmento:', reader.currentSegmentIndex, 'tipo:', segment.type);
+                
+                // Configurar el utterance para este segmento
+                const utterance = new SpeechSynthesisUtterance(segment.text);
+                utterance.lang = 'es-ES';
+                utterance.rate = parseFloat(reader.rateValue);
+                
+                // Establecer la voz de Paulina
+                if (paulinaVoice) {
+                    utterance.voice = paulinaVoice;
+                    console.log('Usando voz Paulina:', paulinaVoice.name);
+                } else {
+                    console.warn('Voz Paulina no encontrada, usando voz predeterminada');
+                }
+                
+                // Evento cuando termina la lectura del segmento
+                utterance.onend = function() {
+                    console.log('Segmento finalizado:', reader.currentSegmentIndex);
+                    reader.currentSegmentIndex++;
+                    // Continuar con el siguiente segmento sin pausa
+                    processNextSegment(reader, controls, sectionId);
+                };
+                
+                // Evento de error
+                utterance.onerror = function(event) {
+                    console.error('Error en la síntesis de voz:', event.error);
+                    updateButtonStates(controls, false);
+                    delete activeReaders[sectionId];
+                };
+                
+                // Iniciar la lectura del segmento
+                console.log('Iniciando síntesis de voz para segmento:', reader.currentSegmentIndex);
+                synth.speak(utterance);
+                updateButtonStates(controls, true);
+            }
+            
+            // Iniciar la lectura
+            playBtn.addEventListener('click', function() {
+                console.log('Botón Play presionado para sección:', sectionId);
+                const reader = activeReaders[sectionId];
+                
+                // Si hay un lector activo y está pausado por el usuario, reanudarlo
+                if (reader && reader.isPaused) {
+                    console.log('Reanudando lectura pausada por usuario');
+                    synth.resume();
+                    reader.isPaused = false;
+                    updateButtonStates(controls, true);
+                    return;
+                }
+                
+                // Detener cualquier lectura anterior
+                synth.cancel();
+                
+                // Limpiar lectores activos
+                Object.keys(activeReaders).forEach(key => {
+                    const readerControls = document.querySelector(`.speech-controls[data-target="${key}"]`);
+                    if (readerControls) {
+                        updateButtonStates(readerControls, false);
+                    }
+                });
+                activeReaders = {};
+                
+                // Obtener el texto segmentado a leer
+                const sectionContent = getSectionText(sectionId);
+                if (!sectionContent || sectionContent.segments.length === 0) {
+                    console.error('No se encontró texto para leer en la sección:', sectionId);
+                    return;
+                }
+                
+                console.log('Segmentos encontrados:', sectionContent.segments.length, 'con pausas:', sectionContent.hasSegments);
+                
+                // Crear el lector activo
+                const newReader = {
+                    segments: sectionContent.segments,
+                    currentSegmentIndex: 0,
+                    isPaused: false,
+                    rateValue: rateControl.value
+                };
+                
+                activeReaders[sectionId] = newReader;
+                updateButtonStates(controls, true);
+                
+                // Iniciar la lectura del primer segmento
+                processNextSegment(newReader, controls, sectionId);
+            });
+            
+            // Pausar la lectura
+            pauseBtn.addEventListener('click', function() {
+                const reader = activeReaders[sectionId];
+                if (reader && !reader.isPaused && synth.speaking) {
+                    synth.pause();
+                    reader.isPaused = true;
+                    updateButtonStates(controls, true);
+                    playBtn.disabled = false; // Habilitar el botón de reproducir para reanudar
+                }
+            });
+            
+            // Detener la lectura
+            stopBtn.addEventListener('click', function() {
+                if (activeReaders[sectionId]) {
+                    synth.cancel();
+                    delete activeReaders[sectionId];
+                    updateButtonStates(controls, false);
+                }
+            });
+            
+            // Cambiar la velocidad de lectura
+            rateControl.addEventListener('change', function() {
+                const reader = activeReaders[sectionId];
+                if (reader) {
+                    // Actualizar la velocidad para futuros segmentos
+                    reader.rateValue = this.value;
+                    
+                    // Si está hablando actualmente, reiniciar el segmento actual con la nueva velocidad
+                    if (synth.speaking) {
+                        // Cancelar la síntesis actual
+                        synth.cancel();
+                        
+                        // Reiniciar desde el segmento actual con la nueva velocidad
+                        processNextSegment(reader, controls, sectionId);
+                    }
+                }
+            });
         });
     });
 </script>
